@@ -1,3 +1,4 @@
+from collections import deque
 from random import choice, randint
 
 import pygame
@@ -27,7 +28,7 @@ APPLE_COLOR = (255, 0, 0)
 SNAKE_COLOR = (0, 255, 0)
 
 # Скорость движения змейки:
-SPEED = 20
+SPEED = 4
 
 # Настройка игрового окна:
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), 0, 32)
@@ -42,7 +43,7 @@ clock = pygame.time.Clock()
 class GameObject:
     def __init__(self, body_color=None, position=None) -> None:
         if position is None:
-            self.position = (GRID_SIZE // 2, GRID_SIZE // 2)
+            self.position = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
         else:
             self.position = position
         self.body_color = body_color
@@ -64,7 +65,8 @@ class Apple(GameObject):
         position = None
 
         while position is None or position in snake_pos:
-            position = (randint(0, GRID_SIZE - 1), randint(0, GRID_SIZE - 1))
+            position = (randint(0, GRID_WIDTH - 1) * GRID_SIZE,
+                        randint(0, GRID_HEIGHT - 1) * GRID_SIZE)
 
         return position
 
@@ -75,11 +77,13 @@ class Snake(GameObject):
         self.length = 1
         self.direction = RIGHT
         self.next_direction = None
-        self.positions = [self.position]
+
+        # Из-за вставки в начало использую использовать дэк
+        self.positions = deque([self.position])
         self.last = None
 
     def draw(self) -> None:
-        for position in self.positions[:-1]:
+        for position in self.positions:
             rect = (pygame.Rect(position, (GRID_SIZE, GRID_SIZE)))
             pygame.draw.rect(screen, self.body_color, rect)
             pygame.draw.rect(screen, BORDER_COLOR, rect, 1)
@@ -94,41 +98,99 @@ class Snake(GameObject):
             last_rect = pygame.Rect(self.last, (GRID_SIZE, GRID_SIZE))
             pygame.draw.rect(screen, BOARD_BACKGROUND_COLOR, last_rect)
 
+    def get_head_position(self):
+        return self.positions[0]
+
+    def move(self, new_head, is_apple_pos) -> None:
+        self.positions.appendleft(new_head)
+
+        if not is_apple_pos:
+            self.last = self.positions.pop()
+
+    def update_direction(self) -> None:
+        if self.next_direction:
+            self.direction = self.next_direction
+            self.next_direction = None
+
+    def check_collision(self) -> bool:
+        # Сколько раз поизиция головы встретилась в дэке
+        count = 0
+        head = self.get_head_position()
+        for pos in self.positions:
+            if head == pos:
+                count += 1
+
+        return True if count > 1 else False
+
+    def reset(self) -> None:
+        self.length = 1
+        self.position = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+        self.positions = deque([self.position])
+        self.direction = choice([LEFT, RIGHT, UP, DOWN])
+
+
+def handle_keys(game_object):
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            raise SystemExit
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_UP and game_object.direction != DOWN:
+                game_object.next_direction = UP
+            elif event.key == pygame.K_DOWN and game_object.direction != UP:
+                game_object.next_direction = DOWN
+            elif event.key == pygame.K_LEFT and game_object.direction != RIGHT:
+                game_object.next_direction = LEFT
+            elif event.key == pygame.K_RIGHT and game_object.direction != LEFT:
+                game_object.next_direction = RIGHT
+
 
 def main():
     # Инициализация PyGame:
     pygame.init()
-    # Тут нужно создать экземпляры классов.
-    ...
+    snake = Snake()
+    apple = Apple(snake.positions)
 
-    # while True:
-    #     clock.tick(SPEED)
+    while True:
+        # Обрабатываем пользовательский ввод
+        handle_keys(snake)
 
-        # Тут опишите основную логику игры.
-        # ...
+        # Обновление направления движения змейки
+        snake.update_direction()
+
+        # Расчитываем следующую позицию головы
+        new_head = snake.get_head_position()
+        x = (new_head[0] + snake.direction[0] * GRID_SIZE) % SCREEN_WIDTH
+        y = (new_head[1] + snake.direction[1] * GRID_SIZE) % SCREEN_HEIGHT
+        new_head = (x, y)
+
+        # Если новая позиция совпала с яблоком
+        # то увеличиваем длину
+        # чтобы метод snake.move() не отрезал хвост
+        is_apple_pos = False
+        if new_head == apple.position:
+            snake.length += 1
+            is_apple_pos = True
+
+        snake.move(new_head, is_apple_pos)
+        if is_apple_pos:
+            apple.position = apple.randomize_position(snake.positions)
+
+        # Если змея столкнулась сама с собой
+        # то сбрасываем состояние на начальное
+        if snake.check_collision():
+            snake.reset()
+            screen.fill(BOARD_BACKGROUND_COLOR)
+
+        # Готовим отрисовку змеи и яблока
+        snake.draw()
+        apple.draw()
+
+        # Обновляем экран
+        pygame.display.update()
+
+        clock.tick(SPEED)
 
 
 if __name__ == '__main__':
     main()
-
-# Функция обработки действий пользователя
-# def handle_keys(game_object):
-#     for event in pygame.event.get():
-#         if event.type == pygame.QUIT:
-#             pygame.quit()
-#             raise SystemExit
-#         elif event.type == pygame.KEYDOWN:
-#             if event.key == pygame.K_UP and game_object.direction != DOWN:
-#                 game_object.next_direction = UP
-#             elif event.key == pygame.K_DOWN and game_object.direction != UP:
-#                 game_object.next_direction = DOWN
-#             elif event.key == pygame.K_LEFT and game_object.direction != RIGHT:
-#                 game_object.next_direction = LEFT
-#             elif event.key == pygame.K_RIGHT and game_object.direction != LEFT:
-#                 game_object.next_direction = RIGHT
-
-# Метод обновления направления после нажатия на кнопку
-# def update_direction(self):
-#     if self.next_direction:
-#         self.direction = self.next_direction
-#         self.next_direction = None
