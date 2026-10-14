@@ -58,7 +58,7 @@ class GameObject:
 class Apple(GameObject):
     """Класс, отвечающий за логику яблок."""
 
-    def __init__(self, snake_position=[]) -> None:
+    def __init__(self, snake_position=()) -> None:
         super().__init__(APPLE_COLOR, self.randomize_position(snake_position))
 
     def draw(self) -> None:
@@ -67,7 +67,7 @@ class Apple(GameObject):
         pygame.draw.rect(screen, self.body_color, rect)
         pygame.draw.rect(screen, BORDER_COLOR, rect, 1)
 
-    def randomize_position(self, snake_pos=None) -> tuple[int, int]:
+    def randomize_position(self, snake_pos=()) -> tuple[int, int]:
         """Метод возвращает случайную разрешённую позицию для яблока."""
         position = None
 
@@ -134,7 +134,7 @@ class Snake(GameObject):
             if head == pos:
                 count += 1
 
-        return True if count > 1 else False
+        return count > 1
 
     def reset(self) -> None:
         """Метод сбрасывает состояние змейки на исходное."""
