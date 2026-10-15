@@ -36,6 +36,9 @@ BORDER_COLOR = (93, 216, 228)
 # Цвет яблока
 APPLE_COLOR = (255, 0, 0)
 
+# Цвет камня
+ROCK_COLOR = (128, 128, 128)
+
 # Цвет змейки
 SNAKE_COLOR = (0, 255, 0)
 
@@ -74,24 +77,39 @@ class GameObject:
             'Метод draw нужно переопределить в наследниках')
 
 
-class Apple(GameObject):
+class StaticObject(GameObject):
+    """Класс, отвечающий за логику неподвижных объектов"""
+
+    def draw(self) -> None:
+        """Метод отрисовывает статические объекты."""
+        self.draw_rect(self.position, self.body_color)
+
+    def randomize_position(self, occupied_position) -> None:
+        """
+        Метод возвращает случайную не занятую
+        позицию для статических объектов.
+        """
+        while True:
+            self.position = (randint(0, GRID_WIDTH - 1) * GRID_SIZE,
+                             randint(0, GRID_HEIGHT - 1) * GRID_SIZE)
+            if self.position not in occupied_position:
+                break
+
+
+class Apple(StaticObject):
     """Класс, отвечающий за логику яблок."""
 
     def __init__(self, occupied_position=None) -> None:
         super().__init__(APPLE_COLOR)
         self.randomize_position(occupied_position or [])
 
-    def draw(self) -> None:
-        """Метод отрисовывает яблоко."""
-        self.draw_rect(self.position, self.body_color)
 
-    def randomize_position(self, occupied_position) -> None:
-        """Метод возвращает случайную разрешённую позицию для яблока."""
-        while True:
-            self.position = (randint(0, GRID_WIDTH - 1) * GRID_SIZE,
-                             randint(0, GRID_HEIGHT - 1) * GRID_SIZE)
-            if self.position not in occupied_position:
-                break
+class Rock(StaticObject):
+    """Класс, отвечающий за логику камней."""
+
+    def __init__(self, occupied_position=None) -> None:
+        super().__init__(ROCK_COLOR)
+        self.randomize_position(occupied_position or [])
 
 
 class Snake(GameObject):
@@ -170,6 +188,7 @@ def main() -> None:
     pg.init()
     snake = Snake()
     apple = Apple(snake.positions)
+    rock = Rock(snake.positions + [apple.position])
 
     while True:
         # Обрабатываем пользовательский ввод
@@ -179,18 +198,21 @@ def main() -> None:
         snake.move()
         if snake.get_head_position() == apple.position:
             snake.length += 1
-            apple.randomize_position(snake.positions)
+            apple.randomize_position(snake.positions + [rock.position])
 
         # Если змея столкнулась сама с собой
         # то сбрасываем состояние на начальное
-        elif snake.positions.count(snake.get_head_position()) > 1:
+        elif (snake.positions.count(snake.get_head_position()) > 1
+              or snake.get_head_position() == rock.position):
             snake.reset()
             screen.fill(BOARD_BACKGROUND_COLOR)
             apple.randomize_position(snake.positions)
+            rock.randomize_position(snake.positions + [apple.position])
 
-        # Готовим отрисовку змеи и яблока
+        # Готовим отрисовку змейки, яблока и камня
         snake.draw()
         apple.draw()
+        rock.draw()
 
         # Обновляем экран
         pg.display.update()
