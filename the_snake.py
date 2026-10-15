@@ -40,7 +40,7 @@ APPLE_COLOR = (255, 0, 0)
 ROCK_COLOR = (128, 128, 128)
 
 # Цвет змейки
-SNAKE_COLOR = (0, 255, 0)
+SNAKE_COLOR = (139, 0, 255)
 
 # Скорость движения змейки:
 SPEED = 4
@@ -49,7 +49,7 @@ SPEED = 4
 screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), 0, 32)
 
 # Заголовок окна игрового поля:
-pg.display.set_caption('Змейка, клаиваша escape для выхода')
+pg.display.set_caption('Змейка, для выхода нажмите escape')
 
 # Настройка времени:
 clock = pg.time.Clock()
