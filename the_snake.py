@@ -74,7 +74,7 @@ class GameObject:
     def draw(self) -> None:
         """Метод для отрисовки объектов."""
         raise NotImplementedError(
-            'Метод draw нужно переопределить в наследниках')
+            f'Метод draw не переопределён в классе {type(self).__name__}')
 
 
 class StaticObject(GameObject):
@@ -121,7 +121,6 @@ class Snake(GameObject):
 
         # По ТЗ при создании должна двигаться вправо
         self.direction = RIGHT
-        self.last = None
 
     def draw(self) -> None:
         """Метод отвечает за отрисовку змейки."""
@@ -138,10 +137,10 @@ class Snake(GameObject):
 
     def move(self) -> None:
         """Метод обновляет состояние головы и хвоста змеи."""
-        x, y = self.get_head_position()
-        dx, dy = self.direction
-        self.position = ((x + (dx * GRID_SIZE)) % SCREEN_WIDTH,
-                         (y + (dy * GRID_SIZE)) % SCREEN_HEIGHT)
+        head_x, head_y = self.get_head_position()
+        direction_x, direction_y = self.direction
+        self.position = ((head_x + (direction_x * GRID_SIZE)) % SCREEN_WIDTH,
+                         (head_y + (direction_y * GRID_SIZE)) % SCREEN_HEIGHT)
 
         self.positions.insert(0, self.position)
 
@@ -158,8 +157,7 @@ class Snake(GameObject):
         """Метод сбрасывает состояние змейки на исходное."""
         self.length = 1
 
-        # После каждого столкновения возвращает в центр
-        self.position = CENTER
+        self.last = None
         self.positions = [self.position]
         self.direction = choice([LEFT, RIGHT, UP, DOWN])
 
